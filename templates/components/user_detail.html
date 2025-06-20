@@ -1,0 +1,29 @@
+{%extends 'base.html'%}
+
+{%block content%}
+<div class="container mt-5">
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-body text-center">
+
+            <img src="{{ user.avatar_url or 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=' ~ user.id }}"
+                 alt="Avatar"
+                 class="rounded-circle mb-3"
+                 width="120" height="120">
+
+
+            <h4 class="card-title">{{ user.name }}</h4>
+
+            <p class="text-muted mb-2">{{ user.email }}</p>
+
+            {% if user.bio %}
+            <p class="card-text">{{ user.bio }}</p>
+            {% else %}
+            <p class="card-text text-muted">no dio for user</p>
+            {% endif %}
+
+            <a href="/" class="btn btn-outline-secondary mt-3">Back to list</a>
+        </div>
+    </div>
+</div>
+
+{%endblock%}

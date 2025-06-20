@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}
+    Contact us
+{% endblock %}
+
+{% block content %}
+<h1>Contact Us</h1>
+<form class="p-4 border rounded bg-light shadow-sm" method="post" action="/submit">
+    <div class="mb-3">
+        <label for="fullName" class="form-label">User name</label>
+        <input type="text" class="form-control" id="fullName" name="fullName" placeholder="tyoe your name"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="message" class="form-label">Message</label>
+        <textarea class="form-control" id="message" name="message" rows="4" placeholder="your message..."
+                  required></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Send</button>
+</form>
+
+{% endblock %}
