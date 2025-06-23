@@ -1,7 +1,9 @@
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, render_template_string
+from flask_login import login_user, LoginManager, login_required, logout_user
+from flask import Flask, render_template, request, render_template_string, flash, redirect, url_for
 import os
-
+from werkzeug.security import generate_password_hash, check_password_hash
+from forms import RegisterForm, LoginForm
 from models import db, User
 
 load_dotenv()
@@ -9,9 +11,14 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+login_manager = LoginManager()
+login_manager.init_app(app)
 db.init_app(app)
-@app.route('/')
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+@app.route('/',endpoint='index')
 def homepage():
     users = User.query.all()
     return render_template('home.html', users=users)
@@ -34,13 +41,50 @@ def user_profile(user_id):
 def about():
     return render_template("about.html")
 
-@app.route("/login", methods=['GET', 'POST'],endpoint='login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    return (f"login page")
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and check_password_hash(user.password_hash, form.password.data):
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            flash('Неправильний email або пароль', 'danger')
+    return render_template('login.html', form=form)
 
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()  # вихід користувача
+    flash('Ви успішно вийшли з системи.', 'info')
+    return redirect(url_for('login'))
 @app.route("/register", methods=['GET', 'POST'],endpoint='register')
 def register():
-    return render_template_string(f"register page")
+    form = RegisterForm()
+    if form.validate_on_submit():
+        # 1. Отримуємо дані з форми
+        name = form.name.data
+        email = form.email.data
+        password = form.password.data
+
+        # 2. Створюємо нового користувача
+        new_user = User(
+            name=name,
+            email=email,
+            password_hash=generate_password_hash(password)
+        )
+
+        # 3. Додаємо до сесії та зберігаємо в БД
+        db.session.add(new_user)
+        db.session.commit()
+
+        # 4. Повідомлення і редірект
+        flash("Реєстрація успішна!", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html", form=form)
 
 
 @app.errorhandler(404)
@@ -57,31 +101,36 @@ if __name__ == '__main__':
                     name="Oleh Solovey",
                     email="oleh@example.com",
                     bio="Enjoys early morning runs in the park.",
-                    avatar_url="https://i.pravatar.cc/150?img=10"
+                    avatar_url="https://i.pravatar.cc/150?img=10",
+                    password_hash=generate_password_hash("123456")
                 ),
                 User(
                     name="Iryna Kovalchuk",
                     email="iryna@example.com",
                     bio="Graphic designer and avid traveler.",
-                    avatar_url="https://i.pravatar.cc/150?img=20"
+                    avatar_url="https://i.pravatar.cc/150?img=20",
+                    password_hash=generate_password_hash("123456")
                 ),
                 User(
                     name="Nazar Bondarenko",
                     email="nazar@example.com",
                     bio="Working on a cybersecurity startup.",
-                    avatar_url="https://i.pravatar.cc/150?img=30"
+                    avatar_url="https://i.pravatar.cc/150?img=30",
+                    password_hash=generate_password_hash("123456")
                 ),
                 User(
                     name="Maria Lytvyn",
                     email="maria@example.com",
                     bio="Photographer and university lecturer.",
-                    avatar_url="https://i.pravatar.cc/150?img=40"
+                    avatar_url="https://i.pravatar.cc/150?img=40",
+                    password_hash=generate_password_hash("123456")
                 ),
                 User(
                     name="Artem Kostiuk",
                     email="artem@example.com",
                     bio="Writes code and listens to jazz music.",
-                    avatar_url="https://i.pravatar.cc/150?img=50"
+                    avatar_url="https://i.pravatar.cc/150?img=50",
+                    password_hash=generate_password_hash("123456")
                 ),
             ]
             db.session.add_all(demo_users)
