@@ -1,9 +1,13 @@
-from flask import Flask, render_template
+from dotenv import load_dotenv
+from flask import Flask, render_template, request, render_template_string
+import os
+
 from models import db, User
 
+load_dotenv()
 app = Flask(__name__)
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -29,6 +33,14 @@ def user_profile(user_id):
 @app.route("/about")
 def about():
     return render_template("about.html")
+
+@app.route("/login", methods=['GET', 'POST'],endpoint='login')
+def login():
+    return (f"login page")
+
+@app.route("/register", methods=['GET', 'POST'],endpoint='register')
+def register():
+    return render_template_string(f"register page")
 
 
 @app.errorhandler(404)
