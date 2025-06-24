@@ -218,4 +218,5 @@ if __name__ == '__main__':
             db.session.add_all(demo_users)
             db.session.commit()
     # app.run(host='0.0.0.0',port=5000,debug=True)
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    # socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
