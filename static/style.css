@@ -24,3 +24,31 @@ footer{
     padding: 20px 10px;
     text-align: center;
 }
+.bubble-left {
+  border-radius: 20px 20px 20px 5px;
+  background-color: #f1f0f0;
+}
+
+.bubble-right {
+  border-radius: 20px 20px 5px 20px;
+  background-color: #0d6efd;
+  color: white;
+}
+
+.bubble-tail {
+  position: absolute;
+  bottom: -6px;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+}
+
+.bubble-tail.left {
+  left: 15px;
+  border-top-color: #f1f0f0;
+}
+
+.bubble-tail.right {
+  right: 15px;
+  border-top-color: #0d6efd;
+}

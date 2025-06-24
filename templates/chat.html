@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block title %}Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-3">
+  <div class="row">
+    <!-- Список користувачів -->
+    <div class="col-3 border-end">
+      <h5>Користувачі</h5>
+      <ul class="list-group" id="user-list">
+        {% for u in users %}
+          {% if u.id != current_user.id %}
+            <li class="list-group-item user d-flex justify-content-between align-items-center" data-user-id="{{ u.id }}" data-user-name="{{ u.name }}">
+              <div class="d-flex align-items-center">
+                <img src="{{ u.avatar_url }}" alt="avatar" class="rounded-circle me-2" width="32" height="32">
+                <span class="user-name">{{ u.name }}</span>
+              </div>
+              <span class="badge bg-danger rounded-pill d-none" id="badge-{{ u.id }}">0</span>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Область чату -->
+    <div class="col-9">
+      <h5 id="chat-title">Оберіть користувача</h5>
+      <div id="chat-box" class="border rounded p-2 mb-2" style="height: 400px; overflow-y: auto; background-color: #f9f9f9;"></div>
+      <form id="chat-form" class="input-group">
+        <input type="text" class="form-control" id="chat-input" placeholder="Напишіть повідомлення..." autocomplete="off">
+        <button class="btn btn-primary" type="submit">Надіслати</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const socket = io();
+  let receiverId = null;
+  let receiverName = '';
+  const userList = document.getElementById('user-list');
+  const badges = {};
+
+  // Очистити активні підсвітки
+  function clearActiveUsers() {
+    document.querySelectorAll('.user').forEach(user => {
+      user.classList.remove('active');
+    });
+  }
+
+  // При кліку на користувача
+  document.querySelectorAll('.user').forEach(item => {
+    const uid = item.dataset.userId;
+    badges[uid] = document.getElementById('badge-' + uid);
+
+    item.addEventListener('click', () => {
+      receiverId = uid;
+      receiverName = item.dataset.userName;
+
+      document.getElementById('chat-title').innerText = 'Чат з ' + receiverName;
+      document.getElementById('chat-box').innerHTML = ''; // Очистити чат
+
+      clearActiveUsers();
+      item.classList.add('active');
+
+      // Сховати badge, бо відкрили чат
+      if (badges[uid]) {
+        badges[uid].classList.add('d-none');
+        badges[uid].innerText = '0';
+      }
+
+      socket.emit('load_chat_history', { to: receiverId });
+    });
+  });
+
+  document.getElementById('chat-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (message && receiverId) {
+      socket.emit('private_message', {
+        to: receiverId,
+        content: message
+      });
+      appendMessage('Я', message, true);
+      input.value = '';
+    }
+  });
+
+  socket.on('receive_message', data => {
+    const senderId = data.from_id;
+
+    if (senderId == receiverId) {
+      appendMessage(data.from_name, data.content, false);
+    } else {
+      // Додати/збільшити бейдж, бо чат неактивний
+      const badge = badges[senderId];
+      if (badge) {
+        let count = parseInt(badge.innerText || '0');
+        badge.innerText = count + 1;
+        badge.classList.remove('d-none');
+      }
+    }
+  });
+
+/*  socket.on('chat_history', data => {
+    const box = document.getElementById('chat-box');
+    box.innerHTML = ''; // Очистити
+    data.messages.forEach(msg => {
+      const isMe = msg.sender_name === 'Я';
+      appendMessage(msg.sender_name, msg.content, isMe);
+    });
+  });*/
+
+  socket.on('chat_history', data => {
+  const box = document.getElementById('chat-box');
+  box.innerHTML = '';
+  const currentUserId = data.current_user_id;
+
+  data.messages.forEach(msg => {
+    const isMe = msg.sender_id == currentUserId;
+    appendMessage(msg.sender_name, msg.content, isMe);
+  });
+});
+
+  /*function appendMessage(sender, text, isMe = false) {
+    const box = document.getElementById('chat-box');
+    const alignment = isMe ? 'text-end' : 'text-start';
+    const bubbleClass = isMe ? 'bg-primary text-white' : 'bg-light';
+    box.innerHTML += `
+      <div class="mb-2 ${alignment}">
+        <div class="d-inline-block px-3 py-2 rounded ${bubbleClass}">
+          <strong>${sender}:</strong> ${text}
+        </div>
+      </div>`;
+    box.scrollTop = box.scrollHeight;
+  }*/
+/*  function appendMessage(sender, text, isMe = false) {
+  const box = document.getElementById('chat-box');
+  const alignment = isMe ? 'text-end' : 'text-start';
+  const bubbleClass = isMe ? 'bubble-right bg-primary text-white' : 'bubble-left bg-light';
+  const bubbleTail = `
+    <div class="bubble-tail ${isMe ? 'right' : 'left'}"></div>
+  `;
+
+  box.innerHTML += `
+    <div class="mb-2 ${alignment}">
+      <div class="position-relative d-inline-block px-3 py-2 rounded-pill ${bubbleClass}">
+        <strong>${sender}:</strong> ${text}
+        ${bubbleTail}
+      </div>
+    </div>
+  `;
+  box.scrollTop = box.scrollHeight;
+}*/
+  function appendMessage(sender, text, isMe = false) {
+  const box = document.getElementById('chat-box');
+  const alignment = isMe ? 'text-end' : 'text-start';
+  const bubbleClass = isMe ? 'bubble-right bg-primary text-white' : 'bubble-left bg-received text-dark';
+  const bubbleTail = `
+    <div class="bubble-tail ${isMe ? 'right' : 'left'}"></div>
+  `;
+
+  box.innerHTML += `
+    <div class="mb-2 ${alignment}">
+      <div class="position-relative d-inline-block px-3 py-2 ${bubbleClass}">
+        <strong>${sender}:</strong> ${text}
+        ${bubbleTail}
+      </div>
+    </div>
+  `;
+  box.scrollTop = box.scrollHeight;
+}
+
+</script>
+
+<style>
+  .user.active {
+    background-color: #e9ecef;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
