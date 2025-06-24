@@ -1,3 +1,5 @@
+import eventlet
+eventlet.monkey_patch()
 from dotenv import load_dotenv
 from flask_login import login_user, LoginManager, login_required, logout_user, current_user
 from flask import Flask, render_template, request, render_template_string, flash, redirect, url_for
